@@ -3,130 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=yes,viewport-fit=cover">
-    <title>P2P Chat</title>
+    <title>Instagram P2P Chat</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        /* حافظت على نفس تصميمك الجميل مع تعديلات بسيطة */
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#000;color:#fff;height:100vh;overflow:hidden}
         .app{width:100%;max-width:1200px;height:100vh;margin:0 auto;display:flex;flex-direction:column;background:#000;position:relative}
+        
+        /* واجهة الدخول */
         .login{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:99;backdrop-filter:blur(10px)}
         .login .card{background:#1a1a1a;padding:40px 30px;border-radius:24px;text-align:center;width:90%;max-width:360px;border:1px solid #262626}
         .login h1{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:34px;font-weight:700;margin-bottom:8px}
-        .login input{width:100%;padding:14px 18px;background:#262626;border:1px solid #363636;border-radius:14px;color:#fff;font-size:15px;outline:none;margin-bottom:16px;text-align: center;}
-        .login button{width:100%;padding:14px;background:linear-gradient(135deg,#0095f6,#0077cc);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer}
+        .login p{color:#8e8e8e;font-size:14px;margin-bottom:20px}
+        .login input{width:100%;padding:14px 18px;background:#262626;border:1px solid #363636;border-radius:14px;color:#fff;font-size:15px;outline:none;margin-bottom:16px;text-align:center}
+        .login button{width:100%;padding:14px;background:linear-gradient(135deg,#0095f6,#0077cc);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;transition: 0.3s;}
+        .login button:disabled{opacity: 0.5; cursor: not-allowed;}
+        
+        /* الهيدر */
         .header{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid #262626;background:#000;gap:12px}
         .header .avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;font-weight:700}
-        .header .info{flex:1}.header .status{font-size:12px;color:#00c853}
-        .msgs{flex:1;overflow-y:auto;padding:16px 12px;display:flex;flex-direction:column;gap:8px}
-        .msg{max-width:82%;padding:10px 16px;border-radius:22px;font-size:14px;word-wrap:break-word}
-        .msg.sent{background:linear-gradient(135deg,#0095f6,#0077cc);align-self:flex-start;border-bottom-left-radius:8px}
-        .msg.recv{background:#262626;align-self:flex-end;border-bottom-right-radius:8px}
+        .header .info{flex:1}
+        .header .name{font-weight:600;font-size:16px}
+        .header .status{font-size:12px;color:#8e8e8e}
+
+        /* الرسائل */
+        .msgs{flex:1;overflow-y:auto;padding:16px 12px;display:flex;flex-direction:column;gap:12px}
+        .msg{max-width:82%;padding:10px 16px;border-radius:22px;font-size:14px;line-height:1.4;word-wrap:break-word;position:relative}
+        .msg.sent{background:linear-gradient(135deg,#0095f6,#0077cc);color:#fff;align-self:flex-start;border-bottom-left-radius:4px}
+        .msg.recv{background:#262626;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+
+        /* منطقة الكتابة */
         .input{display:flex;align-items:center;padding:12px 16px;border-top:1px solid #262626;background:#000;gap:10px}
-        .input input{flex:1;padding:12px 18px;background:#262626;border:none;border-radius:26px;color:#fff;outline:none}
-        .input button{background:none;border:none;color:#0095f6;font-weight:600;cursor:pointer}
-        #myIdDisplay {font-size: 10px; color: #8e8e8e; cursor: pointer;}
+        .input input{flex:1;padding:12px 18px;background:#262626;border:none;border-radius:26px;color:#fff;font-size:14px;outline:none}
+        .input button{background:none;border:none;color:#0095f6;font-size:15px;font-weight:600;cursor:pointer}
+        .input button:disabled{color:#00376b}
+
+        #myIdBox { margin-top: 20px; padding: 10px; background: #000; border-radius: 10px; border: 1px dashed #363636; cursor: pointer; }
+        #myIdDisplay { color: #f09433; font-family: monospace; font-size: 16px; margin-top: 5px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="app">
-  <div class="login" id="login">
-    <div class="card">
-      <h1>Instagram</h1>
-      <p id="statusTxt">جاري تهيئة الاتصال...</p>
-      <input id="peerIdInput" placeholder="أدخل ID صديقك">
-      <button onclick="connectToFriend()">اتصال بصديق</button>
-      <div style="margin-top: 15px;">
-          <p style="font-size: 12px;">الـ ID الخاص بك (اضغط للنسخ):</p>
-          <p id="myIdDisplay" onclick="copyId()">انتظر...</p>
-      </div>
+    <div class="login" id="login">
+        <div class="card">
+            <h1>Instagram</h1>
+            <p id="statusTxt">جاري تشغيل نظام الاتصال...</p>
+            
+            <input id="friendIdInput" placeholder="أدخل ID صديقك هنا">
+            <button id="connBtn" onclick="connectToFriend()">اتصال بصديق</button>
+
+            <div id="myIdBox" onclick="copyId()">
+                <p style="font-size: 11px; color: #8e8e8e;">الـ ID الخاص بك (اضغط للنسخ):</p>
+                <span id="myIdDisplay">جاري التحميل...</span>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div class="header">
-    <div class="avatar" id="av">?</div>
-    <div class="info">
-      <div class="name" id="uname">محادثة مباشرة</div>
-      <div id="connectionStatus" style="font-size: 11px; color: #8e8e8e;">غير متصل</div>
+    <div class="header">
+        <div class="avatar">C</div>
+        <div class="info">
+            <div class="name">محادثة مشفرة P2P</div>
+            <div class="status" id="chatStatus">غير متصل</div>
+        </div>
     </div>
-  </div>
 
-  <div class="msgs" id="msgs"></div>
+    <div class="msgs" id="msgs"></div>
 
-  <div class="input">
-    <input id="msgInput" placeholder="اكتب رسالة..." oninput="toggle()">
-    <button id="sendBtn" onclick="send()" disabled>إرسال</button>
-  </div>
+    <div class="input">
+        <input id="msgInput" placeholder="اكتب رسالة..." oninput="toggleBtn()">
+        <button id="sendBtn" onclick="sendMsg()" disabled>إرسال</button>
+    </div>
 </div>
 
 <script>
-let peer;
-let conn;
-const $ = id => document.getElementById(id);
+    const $ = id => document.getElementById(id);
+    let peer, conn;
 
-// 1. إنشاء الـ Peer الخاص بك
-peer = new Peer(); 
+    // 1. تشغيل PeerJS
+    peer = new Peer();
 
-peer.on('open', (id) => {
-    $('myIdDisplay').textContent = id;
-    $('statusTxt').textContent = "جاهز للاتصال!";
-});
+    peer.on('open', (id) => {
+        $('myIdDisplay').textContent = id;
+        $('statusTxt').textContent = "جاهز الآن! أرسل الـ ID الخاص بك لصديقك";
+    });
 
-// 2. استقبال اتصال من الصديق
-peer.on('connection', (connection) => {
-    conn = connection;
-    setupChat();
-});
+    // 2. استقبال اتصال من الطرف الآخر
+    peer.on('connection', (connection) => {
+        conn = connection;
+        initChat();
+        alert("اتصل بك صديقك بنجاح!");
+    });
 
-// 3. وظيفة الاتصال بصديق
-function connectToFriend() {
-    const friendId = $('peerIdInput').value.trim();
-    if (!friendId) return alert("أدخل ID صديقك أولاً");
-    
-    conn = peer.connect(friendId);
-    setupChat();
-}
+    // 3. وظيفة الاتصال بصديق
+    function connectToFriend() {
+        const friendId = $('friendIdInput').value.trim();
+        if (!friendId) return alert("يرجى إدخال ID الصديق");
+        
+        $('statusTxt').textContent = "جاري الاتصال بصديقك...";
+        $('connBtn').disabled = true;
 
-function setupChat() {
-    conn.on('open', () => {
+        conn = peer.connect(friendId);
+
+        conn.on('open', () => {
+            initChat();
+        });
+
+        conn.on('error', (err) => {
+            alert("تعذر الاتصال. تأكد من الـ ID أو جرب مرة أخرى.");
+            $('connBtn').disabled = false;
+        });
+    }
+
+    // 4. إعداد واجهة الشات بعد الاتصال
+    function initChat() {
         $('login').style.display = 'none';
-        $('connectionStatus').textContent = "متصل الآن ●";
-        $('connectionStatus').style.color = "#00c853";
-    });
+        $('chatStatus').textContent = "متصل الآن ●";
+        $('chatStatus').style.color = "#00c853";
 
-    conn.on('data', (data) => {
-        add(data, false); // استقبال الرسالة من الصديق
-    });
-}
+        conn.on('data', (data) => {
+            renderMsg(data, false);
+        });
 
-function send() {
-    const i = $('msgInput'), v = i.value.trim();
-    if (!v || !conn) return;
+        conn.on('close', () => {
+            alert("تم قطع الاتصال من الطرف الآخر");
+            location.reload();
+        });
+    }
 
-    conn.send(v); // إرسال الرسالة للصديق
-    add(v, true); // إضافتها لشاشتي
-    i.value = '';
-    toggle();
-}
+    // 5. إرسال رسالة
+    function sendMsg() {
+        const input = $('msgInput');
+        const text = input.value.trim();
+        if (!text || !conn) return;
 
-function add(txt, sent) {
-    const d = document.createElement('div');
-    d.className = 'msg ' + (sent ? 'sent' : 'recv');
-    d.textContent = txt;
-    $('msgs').appendChild(d);
-    $('msgs').scrollTop = $('msgs').scrollHeight;
-}
+        conn.send(text);
+        renderMsg(text, true);
+        input.value = '';
+        toggleBtn();
+    }
 
-function toggle() { $('sendBtn').disabled = !$('msgInput').value.trim() }
+    // 6. عرض الرسالة على الشاشة
+    function renderMsg(txt, isMe) {
+        const div = document.createElement('div');
+        div.className = 'msg ' + (isMe ? 'sent' : 'recv');
+        div.textContent = txt;
+        $('msgs').appendChild(div);
+        $('msgs').scrollTop = $('msgs').scrollHeight;
+    }
 
-function copyId() {
-    const id = $('myIdDisplay').textContent;
-    navigator.clipboard.writeText(id);
-    alert("تم نسخ الـ ID: " + id);
-}
+    function toggleBtn() {
+        $('sendBtn').disabled = !$('msgInput').value.trim();
+    }
 
-$('msgInput').addEventListener('keypress', e => { if (e.key === 'Enter' && !$('sendBtn').disabled) send() });
+    function copyId() {
+        const id = $('myIdDisplay').textContent;
+        if (id.includes("...")) return;
+        navigator.clipboard.writeText(id);
+        alert("تم نسخ الـ ID بنجاح! أرسله لصديقك الآن.");
+    }
+
+    // دعم زر Enter
+    $('msgInput').addEventListener('keypress', e => { if (e.key === 'Enter' && !$('sendBtn').disabled) sendMsg() });
 </script>
+
 </body>
 </html>
